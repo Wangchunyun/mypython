@@ -221,34 +221,30 @@ class Model(dict,metaclass=ModelMetacalss):
 			return None
 		return rs[0]['_num_']
 
+	@classmethod
+	async def find(cls,pk):
+		' find object by primary key. '
+		rs = await select('%s where \'%s\'=?'%(cls.__select__,cls.__primary_key__),[pk],1)
+		if len(rs)==0:
+			return  None
+		return cls(**rs[0])
 
+	async def save(self):
+		args = list(map(self.getValueOrDefault,self.__fiels__))
+		args.append(self.getValueOrDefault(self.__primnary_key__))
+		rows = await execute(self.__insert__,args)
+		if rows != 1:
+			logging.warn('failed to insert record: affected rows: %s' % rows)
 
+	async def update(self):
+		args = list(map(self.getValue,self.__fiels__))
+		args.append(self.getValue(self.__primnary_key__))
+		rows = execute(self.__update__,args)
+		if rows != 1:
+			logging.warn('failed to update by primary key: affected rows: %s' % rows)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	async def remove(self):
+		args = [self.getValue(self.__primnary_key__)]
+		rows = await execute(self.__delete__,args)
+		if rows != 1:
+			logging.warn('failed to remove by primary key: affected rows: %s' % rows)
