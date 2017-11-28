@@ -11,7 +11,7 @@ import aiomysql
 def log(sql,args=()):
 	logging.info('SQL: %s' % sql)
 
-async def create_pool(loop,**kw):
+async def create_pool(**kw):
 	logging.info('create database connection pool....')
 	global __pool
 	__pool = await aiomysql.create_pool(
@@ -24,7 +24,7 @@ async def create_pool(loop,**kw):
 		autocommit=kw.get('autocommit',True),
 		maxsize=kw.get('maxsize',10),
 		minsize=kw.get('minsize',1),
-		loop=loop
+		# loop=loop
 	)
 
 #数据查询函数
@@ -116,7 +116,7 @@ class TextField(Field):
 class ModelMetacalss(type):
 
 	def __new__(cls, name, bases,attrs):
-		if name=='model':
+		if name=='Model':
 			return type.__new__(cls,name,bases,attrs)
 		tableName = attrs.get('__table__',None) or name
 		logging.info('found model %s:(table:%s)'%(name,tableName))
@@ -138,14 +138,14 @@ class ModelMetacalss(type):
 		if not primaryKey:
 			raise SystemError('primary key not found.')
 		for k in mappings.keys():
-			attrs.pop()
+			attrs.pop(k)
 		escaped_fields = list(map(lambda f:'%s'% f,fields))
 		attrs['__mappings__'] = mappings
 		attrs['__table__'] = tableName
 		attrs['__primary_key__'] = primaryKey
 		attrs['__fields__'] = fields
 		attrs['__select__'] = 'select \'%s\',%s from \'%s\''%(primaryKey,', '.join(escaped_fields),tableName)
-		attrs['__insert__'] = 'insert into %s(%s,\'%s\') values(%s)'%(tableName,primaryKey,', '.join(escaped_fields),create_args_string(len(escaped_fields)+1))
+		attrs['__insert__'] = 'insert into \'%s\'(%s,\'%s\') values (%s)'%(tableName,', '.join(escaped_fields),primaryKey,create_args_string(len(escaped_fields)+1))
 		attrs['__update__'] = 'update \'%s\' set %s where \'%s\'=?'%(tableName,','.join(map(lambda f:'\'%s\'=?' % (mappings.get(f).name or f),fields)),primaryKey)
 		attrs['__delete__'] = 'delete from \'%s\' where \'%s\'=?'%(tableName,primaryKey)
 		return type.__new__(cls,name,bases,attrs)
@@ -174,7 +174,7 @@ class Model(dict,metaclass=ModelMetacalss):
 		if value is None:
 			field = self.__mappings__[key]
 			if field.default is not None:
-				value = field.default if callable(field.default) else field.default
+				value = field.default() if callable(field.default) else field.default
 				logging.debug('using default value for %s: %s' % (key, str(value)))
 				setattr(self,key,value)
 		return  value
@@ -230,21 +230,21 @@ class Model(dict,metaclass=ModelMetacalss):
 		return cls(**rs[0])
 
 	async def save(self):
-		args = list(map(self.getValueOrDefault,self.__fiels__))
-		args.append(self.getValueOrDefault(self.__primnary_key__))
+		args = list(map(self.getValueOrDefault,self.__fields__))
+		args.append(self.getValueOrDefault(self.__primary_key__))
 		rows = await execute(self.__insert__,args)
 		if rows != 1:
 			logging.warn('failed to insert record: affected rows: %s' % rows)
 
 	async def update(self):
-		args = list(map(self.getValue,self.__fiels__))
-		args.append(self.getValue(self.__primnary_key__))
+		args = list(map(self.getValue,self.__fields__))
+		args.append(self.getValue(self.__primary_key__))
 		rows = execute(self.__update__,args)
 		if rows != 1:
 			logging.warn('failed to update by primary key: affected rows: %s' % rows)
 
 	async def remove(self):
-		args = [self.getValue(self.__primnary_key__)]
+		args = [self.getValue(self.__primary_key__)]
 		rows = await execute(self.__delete__,args)
 		if rows != 1:
 			logging.warn('failed to remove by primary key: affected rows: %s' % rows)
