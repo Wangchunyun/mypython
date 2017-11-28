@@ -86,31 +86,31 @@ class Field(object):
 class StringField(Field):
 
 	def __init__(self,name=None,ddl='varchar(100)',primary_key=False,default=None):
-		super.__init__(name,ddl,primary_key,default)
+		super().__init__(name,ddl,primary_key,default)
 
 
 class BooleanField(Field):
 
 	def __init__(self,name=None,default=False):
-		super.__init__(name,'boolean',False,default)
+		super().__init__(name,'boolean',False,default)
 
 
 class IntegerField(Field):
 
 	def __init__(self,name=None,default=0):
-		super.__init__(name,'int',False,default)
+		super().__init__(name,'int',False,default)
 
 
 class FloatField(Field):
 
 	def __init__(self,name=None,default=0.0):
-		super.__init__(name,'real',False,default)
+		super().__init__(name,'real',False,default)
 
 
 class TextField(Field):
 
 	def __init__(self,name=None,default=None):
-		super.__init__(name,'text',False,default)
+		super().__init__(name,'text',False,default)
 
 
 class ModelMetacalss(type):
