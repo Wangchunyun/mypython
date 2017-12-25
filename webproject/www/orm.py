@@ -9,7 +9,7 @@ import aiomysql
 
 
 def log(sql,args=()):
-	logging.info('SQL: %s' % sql)
+	logging.info('SQL: %s,ARGS: %s' % (sql,args))
 
 async def create_pool(loop,**kw):
 	logging.info('create database connection pool....')
