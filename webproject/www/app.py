@@ -20,8 +20,13 @@ def index(request):
 
 async def init(loop):
 	await orm.create_pool(loop=loop, user='root', password='root', db='test')
-	user = User(name='wangchunyun', email='624332772@qq.com', passwd='123456', admin=True)
-	await user.save()
+	# user = User(name='wangchunyun', email='624332772@qq.com', passwd='123456', admin=True, image='/2017/12/15/4546rr.jpg')
+	# user = User(name='yunyun', email='14334332772@qq.com', created_at=1514189784.19922, passwd='7888888', admin=True, image='/2017/11/15/4ghghfhrr.jpg',id='0015141897841980b0a0929420c47a89ab4283f71aac817000')
+	user = User(id='0015141897841980b0a0929420c47a89ab4283f71aac817000')
+	# user = User()
+	# print(await user.find('0015141897841980b0a0929420c47a89ab4283f71aac817000'))
+	# print(await user.update())
+	print(await user.remove())
 
 	# app = web.Application(loop=loop)
 	# app.router.add_route('GET','/',index)
@@ -31,6 +36,6 @@ async def init(loop):
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(init(loop))
-loop.close()
+# loop.close()
 
 

@@ -144,10 +144,10 @@ class ModelMetacalss(type):
 		attrs['__table__'] = tableName
 		attrs['__primary_key__'] = primaryKey
 		attrs['__fields__'] = fields
-		attrs['__select__'] = 'select \'%s\',%s from \'%s\''%(primaryKey,', '.join(escaped_fields),tableName)
-		attrs['__insert__'] = 'insert into \'%s\' (%s,\'%s\') values (%s)'%(tableName,', '.join(escaped_fields),primaryKey,create_args_string(len(escaped_fields)+1))
-		attrs['__update__'] = 'update \'%s\' set %s where \'%s\'=?'%(tableName,','.join(map(lambda f:'\'%s\'=?' % (mappings.get(f).name or f),fields)),primaryKey)
-		attrs['__delete__'] = 'delete from \'%s\' where \'%s\'=?'%(tableName,primaryKey)
+		attrs['__select__'] = 'select `%s`,%s from `%s`'%(primaryKey,', '.join(escaped_fields),tableName)
+		attrs['__insert__'] = 'insert into `%s` (%s,`%s`) values (%s)'%(tableName,', '.join(escaped_fields),primaryKey,create_args_string(len(escaped_fields)+1))
+		attrs['__update__'] = 'update `%s` set %s where `%s`=?'%(tableName,', '.join(map(lambda f:'%s=?' % (mappings.get(f).name or f),fields)),primaryKey)
+		attrs['__delete__'] = 'delete from `%s` where `%s`=?'%(tableName,primaryKey)
 		return type.__new__(cls,name,bases,attrs)
 
 
@@ -212,7 +212,7 @@ class Model(dict,metaclass=ModelMetacalss):
 	@classmethod
 	async def findNumber(cls,selectField,where=None,args=None):
 		' find number by select and where. '
-		sql = ['select %s _num_ from \'%s\'' % (selectField,cls.__table__)]
+		sql = ['select %s _num_ from `%s`' % (selectField,cls.__table__)]
 		if where:
 			sql.append('where')
 			sql.append(where)
@@ -224,7 +224,7 @@ class Model(dict,metaclass=ModelMetacalss):
 	@classmethod
 	async def find(cls,pk):
 		' find object by primary key. '
-		rs = await select('%s where \'%s\'=?'%(cls.__select__,cls.__primary_key__),[pk],1)
+		rs = await select('%s where `%s`=?'%(cls.__select__,cls.__primary_key__),[pk],1)
 		if len(rs)==0:
 			return  None
 		return cls(**rs[0])
@@ -239,12 +239,14 @@ class Model(dict,metaclass=ModelMetacalss):
 	async def update(self):
 		args = list(map(self.getValue,self.__fields__))
 		args.append(self.getValue(self.__primary_key__))
-		rows = execute(self.__update__,args)
+		rows = await execute(self.__update__,args)
 		if rows != 1:
 			logging.warn('failed to update by primary key: affected rows: %s' % rows)
+		return rows
 
 	async def remove(self):
 		args = [self.getValue(self.__primary_key__)]
 		rows = await execute(self.__delete__,args)
 		if rows != 1:
 			logging.warn('failed to remove by primary key: affected rows: %s' % rows)
+		return rows
