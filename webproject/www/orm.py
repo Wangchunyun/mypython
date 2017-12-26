@@ -113,7 +113,7 @@ class TextField(Field):
 		super().__init__(name,'text',False,default)
 
 
-class ModelMetacalss(type):
+class ModelMetaclass(type):
 
 	def __new__(cls, name, bases,attrs):
 		if name=='Model':
@@ -139,20 +139,20 @@ class ModelMetacalss(type):
 			raise SystemError('primary key not found.')
 		for k in mappings.keys():
 			attrs.pop(k)
-		escaped_fields = list(map(lambda f:'%s'% f,fields))
+		escaped_fields = list(map(lambda f:'`%s`'% f,fields))
 		attrs['__mappings__'] = mappings
 		attrs['__table__'] = tableName
 		attrs['__primary_key__'] = primaryKey
 		attrs['__fields__'] = fields
 		attrs['__select__'] = 'select `%s`,%s from `%s`'%(primaryKey,', '.join(escaped_fields),tableName)
 		attrs['__insert__'] = 'insert into `%s` (%s,`%s`) values (%s)'%(tableName,', '.join(escaped_fields),primaryKey,create_args_string(len(escaped_fields)+1))
-		attrs['__update__'] = 'update `%s` set %s where `%s`=?'%(tableName,', '.join(map(lambda f:'%s=?' % (mappings.get(f).name or f),fields)),primaryKey)
+		attrs['__update__'] = 'update `%s` set %s where `%s`=?'%(tableName,', '.join(map(lambda f:'`%s`=?' % (mappings.get(f).name or f),fields)),primaryKey)
 		attrs['__delete__'] = 'delete from `%s` where `%s`=?'%(tableName,primaryKey)
 		return type.__new__(cls,name,bases,attrs)
 
 
 # model类以及方法
-class Model(dict,metaclass=ModelMetacalss):
+class Model(dict,metaclass=ModelMetaclass):
 
 	def __init__(self,**kw):
 		super(Model,self).__init__(**kw)
@@ -186,24 +186,21 @@ class Model(dict,metaclass=ModelMetacalss):
 		if where:
 			sql.append('where')
 			sql.append(where)
-
 		if args is None:
 			args = []
-
-		orderBy = kw.get('orderby',None)
+		orderBy = kw.get('orderBy',None)
 		if orderBy:
 			sql.append('order by')
 			sql.append(orderBy)
-
 		limit = kw.get('limit',None)
-		if limit:
+		if limit is not None:
 			sql.append('limit')
 			if isinstance(limit,int):
 				sql.append('?')
 				sql.append(limit)
 			elif isinstance(limit,tuple) and len(limit) == 2:
 				sql.append('?, ?')
-				sql.append(limit)
+				args.extend(limit)
 			else:
 				raise ValueError('Invalid limit value: %s' % str(limit))
 		rs = await select(' '.join(sql),args)
@@ -226,7 +223,7 @@ class Model(dict,metaclass=ModelMetacalss):
 		' find object by primary key. '
 		rs = await select('%s where `%s`=?'%(cls.__select__,cls.__primary_key__),[pk],1)
 		if len(rs)==0:
-			return  None
+			return None
 		return cls(**rs[0])
 
 	async def save(self):
