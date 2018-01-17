@@ -9,16 +9,15 @@ async web application.
 
 
 import logging;logging.basicConfig(level=logging.INFO)
-import orm
+import orm,asyncio,os,json,time,webcore,jinja2
 from models import User,Blog,Comment
-import asyncio,os,json,time
-
 from aiohttp import web
 
 def index(request):
 	return web.Response(body='<h1>WangCY</h1>')
 
 async def init(loop):
+	#测试数据库功能
 	# await orm.create_pool(loop=loop, user='root', password='root', db='test')
 	# user = User(name='wangchunyun', email='624332772@qq.com', passwd='123456', admin=True, image='/2017/12/15/4546rr.jpg')
 	# user = User(name='yunyun', email='14334332772@qq.com', created_at=1514189784.19922, passwd='7888888', admin=True, image='/2017/11/15/4ghghfhrr.jpg',id='0015141897841980b0a0929420c47a89ab4283f71aac817000')
@@ -27,6 +26,13 @@ async def init(loop):
 	# print(await user.find('0015141897841980b0a0929420c47a89ab4283f71aac817000'))
 	# print(await user.update())
 	# print(await user.remove())
+
+	#测试web核心代码
+	# app = web.Application(loop=loop,middlewares=[logger_factory, response_factory])
+	# init_jinjia2()
+	# webcore.add_routes(app,'handlers')
+	# webcore.add_static(app)
+
 
 	app = web.Application(loop=loop)
 	app.router.add_route('GET','/',index)
