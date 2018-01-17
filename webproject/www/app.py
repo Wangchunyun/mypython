@@ -29,7 +29,7 @@ async def init(loop):
 
 	#测试web核心代码
 	# app = web.Application(loop=loop,middlewares=[logger_factory, response_factory])
-	# init_jinjia2()
+	# init_jinjia2(app,filters=dict(datetime=datetime_filter))
 	# webcore.add_routes(app,'handlers')
 	# webcore.add_static(app)
 
