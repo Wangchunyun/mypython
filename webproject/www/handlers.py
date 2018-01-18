@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+__author__ = 'WangCY'
+
 '''
 request handler
 '''
 
-__author__ = 'WangCY'
 
 from webcore import get,post
 from models import User,Blog,Comment

@@ -20,7 +20,7 @@ def get(path):
         @functools.wraps(func)
         def wrapper(*args,**kw):
             return func(*args,**kw)
-        wrapper.__methord__ = 'get'
+        wrapper.__method__ = 'GET'
         wrapper.__route__ = path
         return wrapper
     return decorator
@@ -35,7 +35,7 @@ def post(path):
         @functools.wraps(func)
         def wrapper(*args, **kw):
             return func(*args, **kw)
-        wrapper.__methord__ = 'post'
+        wrapper.__method__ = 'POST'
         wrapper.__route__ = path
         return wrapper
     return decorator
@@ -116,7 +116,6 @@ class RequestHandler(object):
                     kw = dict()
                     for k,v in parse.parse_qs(qs,True).items():
                         kw[k] = v
-
         if kw is None:
             kw = dict(**request.match_info)
         else:
@@ -157,7 +156,7 @@ def add_route(app,fn):
     if not asyncio.iscoroutinefunction(fn) and not inspect.isgeneratorfunction(fn):
         fn = asyncio.coroutine(fn)
     logging.info('add route %s %s => %s(%s)'% (method,path,fn.__name__,','.join(inspect.signature(fn).parameters.keys())))
-    app.route.add_route(method,path,RequestHandler(app,fn))
+    app.router.add_route(method,path,RequestHandler(app,fn))
 
 def add_routes(app,module_name):
     n = module_name.rfind('.')
@@ -171,7 +170,7 @@ def add_routes(app,module_name):
             continue
         fn = getattr(mod,attr)
         if callable(fn):
-            method = getattr(fn,'method',None)
-            path = getattr(fn,'__path__',None)
+            method = getattr(fn,'__method__',None)
+            path = getattr(fn,'__route__',None)
             if method and path:
                 add_route(app,fn)
