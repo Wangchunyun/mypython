@@ -15,7 +15,7 @@ import asyncio,time
 
 @get('/')
 async def index(request):
-    users = await User.fetchAll()
+    users = await User.findAll()
 
     summary = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
     blogs = [
@@ -28,3 +28,10 @@ async def index(request):
         '__template__':'blogs.html',
         'blogs':blogs
     }
+
+@get('/api/users')
+async def getUers():
+    users = await User.findAll()
+    for user in users:
+        user.passwd = '******'
+    return dict(users=users)

@@ -180,7 +180,7 @@ class Model(dict,metaclass=ModelMetaclass):
 		return  value
 
 	@classmethod
-	async def fetchAll(cls,where=None,args=None,**kw):
+	async def findAll(cls,where=None,args=None,**kw):
 		' find objects by where clause. '
 		sql = [cls.__select__]
 		if where:

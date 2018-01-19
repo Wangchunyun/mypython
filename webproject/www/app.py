@@ -14,6 +14,8 @@ from jinja2 import  Environment,FileSystemLoader
 from datetime import datetime
 from aiohttp import web
 
+from config import configs
+
 
 # def index(request):
 # 	return web.Response(body='<h1>WangCY</h1>')
@@ -110,6 +112,7 @@ def datetime_filter(t):
 	return '%s年%s月%s日'% (dt.year,dt.month,dt.day)
 
 
+print(isinstance(configs,dict))
 async def init(loop):
 	#测试数据库功能
 	# await orm.create_pool(loop=loop, user='root', password='root', db='test')
@@ -123,7 +126,8 @@ async def init(loop):
 	# print(await user.remove())
 
 	#测试web核心代码
-	await orm.create_pool(loop=loop, user='root', password='root', db='test')
+
+	await orm.create_pool(loop=loop, **configs['db'])
 	app = web.Application(loop=loop,middlewares=[
 		logger_factory, response_factory
 	])
