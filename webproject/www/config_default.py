@@ -17,7 +17,7 @@ configs = {
         'db':'test',
     },
     'session':{
-        'secret':'Root'
+        'secret':'Wang'
     }
 }
 
