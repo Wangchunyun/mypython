@@ -7,7 +7,6 @@ __author__ = 'WangCY'
 Models for user,blog,comment
 '''
 
-
 import time,uuid
 
 from orm import Model,StringField,TextField,BooleanField,FloatField

@@ -7,7 +7,7 @@ __author__ = 'WangCY'
 import asyncio,os,inspect,logging,functools
 from urllib import parse
 from aiohttp import web
-from APIerror import APIError
+from apiserr import APIError
 
 
 def get(path):
@@ -68,7 +68,6 @@ def has_var_kw_arg(fn):
         if param.kind == inspect.Parameter.VAR_KEYWORD:
             return True
 
-
 def has_request_arg(fn):
     sig = inspect.signature(fn)
     params = sig.parameters
@@ -115,22 +114,25 @@ class RequestHandler(object):
                 if qs:
                     kw = dict()
                     for k,v in parse.parse_qs(qs,True).items():
-                        kw[k] = v
+                        kw[k] = v[0]
         if kw is None:
             kw = dict(**request.match_info)
         else:
             if not self._has_var_kw_arg and self._named_kw_args:
+                # remove all unamed kw:
                 copy = dict()
                 for name in self._named_kw_args:
-                    if name == kw:
+                    if name in kw:
                         copy[name] = kw[name]
                 kw = copy
+            # check named arg:
             for k,v in request.match_info.items():
                 if k in kw:
                     logging.warning('Duplicate arg name in named arg and kw args: %s'% k)
                 kw[k] = v
         if self._has_request_arg:
             kw['request'] = request
+        # check required kw:
         if self._required_kw_args:
             for name in self._required_kw_args:
                 if not name in kw:

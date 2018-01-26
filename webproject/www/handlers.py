@@ -9,13 +9,31 @@ request handler
 
 from webcore import get,post
 from models import User,Blog,Comment,next_id
-from APIerror import APIValueError,APIResourceNotFoundError
+from apiserr import Page,APIValueError,APIResourceNotFoundError,APIPermissionError
 from config import configs
 from aiohttp import web
-import asyncio,time,hashlib,logging,re,json
+import asyncio,time,hashlib,logging,re,json,markdown2
 
 COOKIE_NAME = 'wangsession'
 _COOKIE_KEY = configs['session']['secret']
+
+def checkAdmin(request):
+    if request.__user__ is None or not request.__user__.admin:
+        raise APIPermissionError()
+
+def getPageIndex(page_str):
+    p = 1
+    try:
+        p = int(page_str)
+    except ValueError as e:
+        pass
+    if p < 1:
+        p = 1
+    return p
+
+def textToHtml(text):
+    lines = map(lambda s:'<p>%s</p>'% s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'),filter(lambda s: s.strip()!='',text.split('\n')))
+    return ''.join(lines)
 
 def userToCookie(user,max_age):
     '''
@@ -46,7 +64,7 @@ async def cookieToUser(cookie_str):
         user = await User.find(uid)
         if user is None:
             return None
-        s = '%s-%s-%s-%s' % (user.id, user.passwd, expires, _COOKIE_KEY)
+        s = '%s-%s-%s-%s' % (uid, user.passwd, expires, _COOKIE_KEY)
         if sha1 != hashlib.sha1(s.encode('utf-8')).hexdigest():
             logging.info('invalid sha1')
             return None
@@ -95,7 +113,7 @@ def signout(request):
 _RE_EMAIL = re.compile(r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$')
 _RE_SHA1 = re.compile(r'^[0-9a-f]{40}$')
 
-@get('/api/users')
+@post('/api/users')
 async def register_user(*,email,name,passwd):
     if not name or not name.strip():
         raise APIValueError('name')
@@ -144,3 +162,58 @@ async def authLogin(*,email,passwd):
     r.body = json.dumps(user,ensure_ascii=False).encode('utf-8')
     return r
 
+@get('/blog/{id}')
+async def getBlog(id):
+    blog = await Blog.find(id)
+    comments = await Comment.findAll('blog_id=?',[id],orderBy='created_at desc')
+    for c in comments:
+        c.html_content = textToHtml(c.content)
+    blog.html_content = markdown2.markdown(blog.content)
+    return {
+        '__template__': 'blog.html',
+        'blog': blog,
+        'comments': comments
+    }
+
+@get('/manage/blogs/create')
+def manageCreateBlog():
+    return {
+        '__template__': 'manage_blog_edit.html',
+        'id': '',
+        'action': '/api/blogs'
+    }
+
+@get('/manage/blogs')
+def manageBlogs(*,page='1'):
+    return {
+        '__template__': 'manage_blogs.html',
+        'page_index': getPageIndex(page)
+    }
+
+@get('/api/blogs/{id}')
+async def apiGetBlog(*,id):
+    blog = await Blog.find(id)
+    return blog
+
+@get('/api/blogs')
+async def apiBlogs(*,page='1'):
+    page_index = getPageIndex(page)
+    num = await Blog.findNumber('count(id)')
+    p = Page(num,page_index)
+    if num == 0:
+        return dict(page=p,blogs=())
+    blogs = await Blog.findAll(orderBy='created_at desc',limit=(p.offset,p.limit))
+    return dict(page=p,blogs=blogs)
+
+@post('/api/blogs')
+async def createBlog(request,*,name,summary,content):
+    checkAdmin(request)
+    if not name or not name.strip():
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary or not summary.strip():
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content or not content.strip():
+        raise APIValueError('content', 'content cannot be empty.')
+    blog = Blog(user_id=request.__user__id,user_name=request.__user__.name,user_image=request.__user__.image,name=name.strip(),summary=summary.strip(),content=content.strip())
+    await blog.save()
+    return blog
