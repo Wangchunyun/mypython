@@ -10,9 +10,6 @@ __author__ = 'WangCY'
 
 configs = {
     'db':{
-        'host':'127.0.0.1',
-        'user':'yijian',
-        'password':'YiTao2017',
-        'db':'yijian'
+        'host':'127.0.0.1'
     }
 }
